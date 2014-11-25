@@ -1,0 +1,207 @@
+* web.xml的配置
+	* 解决乱码配置
+		<!-- 解决乱码配置要放在struts之前 -->
+		<filter>
+			<filter-name>encodingFilter</filter-name>
+			<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+			<init-param>
+				<param-name>encoding</param-name>
+				<param-value>UTF-8</param-value>
+			</init-param>
+			<init-param>
+				<param-name>forceEncoding</param-name>
+				<param-value>true</param-value>
+			</init-param>
+		</filter>
+		
+		<filter-mapping>
+			<filter-name>encodingFilter</filter-name>
+			<url-pattern>/*</url-pattern>
+		</filter-mapping>
+		
+	* SpringMVC的servlet配置：
+		  <servlet>
+		  	<!-- 
+		  		要与Spring的配置文件相同 格式为 ***-servlet.xml 如：hello-servlet.xml该文件在WEB-INF下， 如果不相同则必须手动加载， 
+		  		手动加载方式为：（classpath:root-context.xml为xml在源码包下的文件名字，如果在WEB-INF下，则应该写为/WEB-INF/root-context.xml）
+		  			<init-param>
+				        <param-name>contextConfigLocation</param-name>
+				        <param-value>/WEB-INF/spring-servlet.xml</param-value>&nbsp; 默认
+		    		</init-param>
+		  	-->
+		  	<servlet-name>user</servlet-name>
+		  	<!-- DispatcherServlet 为视图分发器 -->
+		  	<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		  	<!-- 加载的次序 -->
+		  	<load-on-startup>1</load-on-startup>
+		  </servlet>
+  
+		  <servlet-mapping>
+		  	<servlet-name>user</servlet-name>
+		  	<!-- 拦截所有-->
+		  	<url-pattern>/</url-pattern>
+		  </servlet-mapping>
+
+* user-servlet.xml中的
+	<?xml version="1.0" encoding="UTF-8"?>
+	<beans xmlns="http://www.springframework.org/schema/beans"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:context="http://www.springframework.org/schema/context"
+		xmlns:mvc="http://www.springframework.org/schema/mvc"
+		xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+			http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
+			http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd">
+	
+		<!-- 默认的  可以不用添加 -->
+		<bean class="org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping"/>
+		
+		<!--指定扫描路径  -->
+		<context:component-scan base-package="com.xiaoy.controller"/>
+		
+		<!--启动注解  -->
+		<mvc:annotation-driven/>
+		
+		<!-- 视图解释类（有多种） -->  
+		<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+			<!-- 使用jstl标签库 -->
+			<property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+			<!-- 前缀 -->
+			<property name="prefix" value="/WEB-INF/jsp/"/>
+			<!-- 后缀 -->
+			<property name="suffix" value=".jsp"/>
+		</bean>
+	</beans>
+
+* 部分注解的说明：
+	1.@Controller	标注此类为一个控制器（用于Action层）
+		
+		* 参数说明：value 指定一个bean的名字。默认为类名首字母小写。	
+		
+		* 使用方式：标注在类上
+		
+	2.@Service	标注此类为一个bean（用于service层）
+	
+		* 参数说明：value 指定一个bean的名字。默认为类名首字母小写。	
+		
+		* 使用方式：标注在类上
+		
+	3.@Repository 标注此类为一个bean（用于dao层）
+	
+		* 参数说明：value 指定一个bean的名字。默认为类名首字母小写。	
+		
+		* 使用方式：标注在类上
+		
+	4.@RequestMapping 请求的路径。如果标注在类上说明此类的所有方法的请求都要加上这个路径。如果标注在方法上，请求要加上这个路径。
+		如果类上和方法上都标注了，那么两个都要加上，类的在前面，方法的在后面。
+		
+		* 参数说明：
+			value：请求的路径
+			method: action的请求类型（GET, HEAD, POST, PUT, DELETE, OPTIONS, TRACE）
+			
+		* 使用方式：@RequestMapping(value="/add", method=RequestMethod.GET)
+		
+	5.@ModelAttribute用于开启ModelDirven。使用SpringMVC标签中from的modelAttribute的时候使用。
+		<%@taglib prefix="sf" uri="http://www.springframework.org/tags/form"%>
+		<sf:form method="post" modelAttribute="user">
+		
+		* 参数说明：String类型的。与modelAttribute中的参数对应。
+		
+		* 使用方式：public String add(@ModelAttribute("user")User user)
+				（有两种开启MidelDirven的方法：
+					方法一：
+					public String add(Model model){
+						//开启ModelDirven
+						model.addAttribute("user", new User());
+					}
+					
+					方法二：
+					public String add(@ModelAttribute("user")User user){
+					}
+				  ）
+				  
+	6.@Validated输入校验：导入 bean-validator.jar（服务器端校验）
+	
+		* 参数说明：无参
+	
+		* 使用方法：public String add(@Validated User user, BindingResult br){
+						//BindingResult一定要跟在@Validated的后面，否则会出错
+						if(br.hasErrors()){
+							return "user/userAdd";
+						}
+						users.put(user.getUsername(), user);
+						return "redirect:/user/users";		//如果是重定向要在返回值前加上redirect:，默认为转发forward:
+					}
+					
+		* 说明：@Validated User user表示需要校验的值。
+				BindingResult br 表示校验后的结果。
+				
+		* 前提条件：User的get方法上要添加校验的类型。
+			@NotEmpty(message="用户名字不能为空")
+			public String getUsername() {
+				return username;
+			}
+		
+			@Size(min=1,max=10,message="密码长度在1到10之间")
+			public String getPassword() {
+				return password;
+			}
+		
+			@Email(message="邮箱格式不正确")
+			public String getEmail() {
+				return email;
+			}
+			
+			在页面上：<sf:errors path="username"/>（path为属性名）
+	7.@PathVariable 用于参数路径：
+		
+		* 参数说明：无参		
+
+		* 使用方式：//从路径中获得username
+			@RequestMapping(value="/{username}", method=RequestMethod.GET)
+			public String show(@PathVariable String username, Model model){
+				model.addAttribute("user",users.get(username));
+				//model.addAttribute(users.get(username));//两种方式相同，默认为获取值的类型
+				return "user/userShow";
+			}
+
+	8.@RequestParam 用于指定参数
+		
+		* 参数说明：value 请求url地址映射中必须含有的参数
+				   required 该参数是否是必须的 默认为true 
+
+		* 使用方式： 
+			public String testLogin(@RequestParam(value="username", required=false)String username, String password){
+				//@RequestParam可简写为：@RequestParam("username")
+			} 
+	9.@Resource 标注在对象属性上或者set方法上。用于bean注入
+		
+		* 参数说明：name 注入的bean的名字
+		
+		* 使用方式：
+			@Resource(name = "loginService")  // 获取applicationContext.xml中bean的id为loginService的，并注入
+    		private LoginService loginService;  //等价于spring传统注入方式写get和set方法，这样的好处是简洁工整，省去了不必要得代码
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
