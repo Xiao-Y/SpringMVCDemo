@@ -72,6 +72,44 @@
 		</bean>
 	</beans>
 
+* 不使用注解的方式，如果想要一个控制器调用不同的方法：
+	* UserController.java文件中：
+		public class UserController extends MultiActionController{
+	
+			public ModelAndView login(HttpServletRequest request, HttpServletResponse response)
+			{
+				return new ModelAndView("login");
+			}
+			
+			public ModelAndView out(HttpServletRequest request, HttpServletResponse response)
+			{
+				return new ModelAndView("out");
+			}
+		}
+
+	* hello-servlet.xml文件中：
+		<bean name="/user.htm" class="com.xiaoy.controller.UserController">
+			<property name="methodNameResolver" ref="parameterMethodNameResolver"/>
+		</bean>
+		
+		<bean name="parameterMethodNameResolver" class="org.springframework.web.servlet.mvc.multiaction.ParameterMethodNameResolver">
+			<property name="paramName" value="method"/><!-- value 名字可以随意取，但访问的时候要与之一置-->
+		</bean>
+		
+		<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+			<!-- 视图解释类的优先级，当有多个视图解释类的时候，可以根据优先级来确定 -->
+			<property name="order" value="0"></property>
+			<!-- 使用jstl标签库 -->
+			<property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+			<!-- 前缀 -->
+			<property name="prefix" value="/WEB-INF/user/"/>
+			<!-- 后缀 -->
+			<property name="suffix" value=".jsp"/>
+		</bean>
+	* 访问方式：
+		http://localhost:8088/SpringMVC04/user.htm?method=out
+		http://localhost:8088/SpringMVC04/user.htm?method=login
+
 * 部分注解的说明：
 	1.@Controller	标注此类为一个控制器（用于Action层）
 		
