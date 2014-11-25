@@ -7,14 +7,10 @@
 <title>用户添加</title>
 </head>
 <body>
-	<sf:form method="post" modelAttribute="user" enctype="multipart/form-data">
+	<sf:form method="post" modelAttribute="user">
 		username:<sf:input path="username"/><sf:errors path="username"/> <br>
 		password:<sf:password path="password"/><sf:errors path="password"/> <br>
 		email:<sf:input path="email"/><sf:errors path="email"/><br>
-		attach:<input type="file" name="attachs"><br>
-		attach:<input type="file" name="attachs"><br>
-		attach:<input type="file" name="attachs"><br>
-		attach:<input type="file" name="attachs"><br>
 		<input type="submit" value="提交">
 	</sf:form>
 </body>

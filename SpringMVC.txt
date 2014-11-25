@@ -181,20 +181,131 @@
 			@Resource(name = "loginService")  // 获取applicationContext.xml中bean的id为loginService的，并注入
     		private LoginService loginService;  //等价于spring传统注入方式写get和set方法，这样的好处是简洁工整，省去了不必要得代码
 
+*异常处理
+	* 局部异常处理：
+		* 新建类extends RuntimeException。
+			public class UserException extends RuntimeException 
+			
+		* 控制器中：
+			@RequestMapping(value="/login", method=RequestMethod.POST)
+			public String login(String username,String password, HttpSession session)
+			{
+				if(!users.containsKey(username))
+				{
+					throw new UserException("用户名字不存在");
+				}
+				User u = users.get(username);
+				if(!password.equals(u.getPassword()))
+				{
+					throw new UserException("密码不正确");
+				}
+				session.setAttribute("loginName", u);
+				return "redirect:/user/users";
+			}
+			
+			/**
+			 * 局部异常处理，仅仅只能用于当前的控制器
+			 * @param e
+			 * @param rq
+			 * @return
+			 */
+			@ExceptionHandler(value=UserException.class)
+			public String handlerException(UserException e, HttpServletRequest rq)
+			{
+				rq.setAttribute("e", e);
+				return "error";
+			}
 
+		* WEB-INF/jsp/errot.jsp
+			${e.message }	//用于显示异常信息
+	
+	
+	* 全局异常处理：
+		* 新建类extends RuntimeException。
+			public class UserException extends RuntimeException 
+			
+		* 控制器中：
+			@RequestMapping(value="/login", method=RequestMethod.POST)
+			public String login(String username,String password, HttpSession session)
+			{
+				if(!users.containsKey(username))
+				{
+					throw new UserException("用户名字不存在");
+				}
+				User u = users.get(username);
+				if(!password.equals(u.getPassword()))
+				{
+					throw new UserException("密码不正确");
+				}
+				session.setAttribute("loginName", u);
+				return "redirect:/user/users";
+			}
+		
+		* user-servlet.xml中：
+			<!-- 用于异常处理（处理全局异常） -->
+			<bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+				<property name="exceptionMappings">
+					<props>
+						<prop key="com.xiaoy.exception.UserException">error</prop>
+					</props>
+				</property>
+			</bean>
 
+		* WEB-INF/jsp/errot.jsp
+			${exception.message }	//用于显示异常信息
 
+* 静态文件的加载：
+	<!-- 添加静态文件 -->
+	<mvc:resources location="/resources/" mapping="/resources/**"/>
+	说明：所有的静态文件都放在resoutces中
 
+* 文件上传：（添加commons-fileupload-1.2.2.jar、commons-io-2.1.jar）
 
+	* user-servlet.xml文件中：
+		<!-- 用于上传 -->
+		<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+			<property name="maxUploadSize" value="5242880"/><!-- 5M -->
+		</bean>
 
+	* UserController.java中:
+		@RequestMapping(value="/add", method=RequestMethod.POST)
+		//BindingResult一定要跟在@Validated的后面，否则会出错
+		public String add(@Validated User user, BindingResult br, @RequestParam("attachs")MultipartFile[] attachs, HttpServletRequest req) throws IOException{
+			if(br.hasErrors()){
+				return "user/userAdd";
+			}
+			String realpath = req.getSession().getServletContext().getRealPath("/resources/upload");
+			for(MultipartFile attach : attachs)//上传多个文件
+			{
+				if(attach.isEmpty())continue;
+				File f = new File(realpath + "/" + attach.getOriginalFilename());
+				FileUtils.copyInputStreamToFile(attach.getInputStream(), f);
+			}
+			users.put(user.getUsername(), user);
+			
+			return "redirect:/user/users";
+		}
 
-
-
-
-
-
-
-
+	* userAdd.jsp页面上：
+		<sf:form method="post" modelAttribute="user" enctype="multipart/form-data">
+		
+			username:<sf:input path="username"/><sf:errors path="username"/> <br>
+			
+			password:<sf:password path="password"/><sf:errors path="password"/> <br>
+			
+			email:<sf:input path="email"/><sf:errors path="email"/><br>
+			
+			attach:<input type="file" name="attachs"><br>
+			
+			attach:<input type="file" name="attachs"><br>
+			
+			attach:<input type="file" name="attachs"><br>
+			
+			attach:<input type="file" name="attachs"><br>
+			
+			<input type="submit" value="提交">
+		</sf:form>
+		注意：enctype="multipart/form-data"
 
 
 

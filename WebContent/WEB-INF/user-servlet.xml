@@ -13,6 +13,9 @@
 	<!--指定扫描路径  -->
 	<context:component-scan base-package="com.xiaoy.controller"/>
 	
+	<!-- 添加静态文件 -->
+	<mvc:resources location="/resources/" mapping="/resources/**"/>
+	
 	<!--启动注解  -->
 	<mvc:annotation-driven/>
 	
@@ -24,5 +27,19 @@
 		<property name="prefix" value="/WEB-INF/jsp/"/>
 		<!-- 后缀 -->
 		<property name="suffix" value=".jsp"/>
+	</bean>
+	
+	<!-- 用于上传 -->
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="maxUploadSize" value="5242880"/><!-- 5M -->
+	</bean>
+	
+	<!-- 用于异常处理（处理全局异常） -->
+	<bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<property name="exceptionMappings">
+			<props>
+				<prop key="com.xiaoy.exception.UserException">error</prop>
+			</props>
+		</property>
 	</bean>
 </beans>
